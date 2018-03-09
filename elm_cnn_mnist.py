@@ -18,9 +18,11 @@ import numpy as np
 import plotly
 import plotly.figure_factory as ff
 
+from plot_data import *
+
 NUM_CLASS = 10
-CNN_EPOCH = 50
-ELM_HIDDEN_NEURONS = 1500
+CNN_EPOCH = 20
+ELM_HIDDEN_NEURONS = 150
 
 
 def load_mnist_2d():
@@ -142,3 +144,5 @@ if __name__ == '__main__':
     elm_model = elm_model_generate(cnn_train_result, target_train)
 
     precision, recall, fscore, support = cnn_elm_evaluation(hidden_layer_model, elm_model, data_test_2d, target_test)
+
+    plot_precision_recall_fscore(precision, recall, fscore)
