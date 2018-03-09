@@ -26,7 +26,7 @@ NUM_CLASS = 10
 ELM_HIDDEN_NEURONS = 1500
 
 
-def load_mnist():
+def load_mnist_2d():
     digits = load_digits()
 
     data = digits.data
@@ -40,7 +40,7 @@ def load_mnist():
     target_train_oh = np_utils.to_categorical(target_train, NUM_CLASS)
     target_test_oh = np_utils.to_categorical(target_test, NUM_CLASS)
 
-    return data_train_2d, data_test_2d, target_train_oh, target_test_oh
+    return data_train_2d, data_test_2d, target_train, target_test
 
 
 def cnn_generate(data_train_2d, target_train_oh):
@@ -95,6 +95,8 @@ def elm_model_generate(train_data):
     ELMモデルの構築
     """
 
+    target_train_oh = np_utils.to_categorical(target_test, NUM_CLASS)
+
     elm_model = hpelm.elm.ELM(cnn_train_result.shape[1], NUM_CLASS)
     elm_model.add_neurons(ELM_HIDDEN_NEURONS, func='sigm')
 
@@ -105,7 +107,7 @@ def elm_model_generate(train_data):
     return elm_model
 
 
-def cnn_elm_evaluation(cnn_part, elm_part, test_data, test_label, file_name="plot_result.html"):
+def cnn_elm_evaluation(cnn_part, elm_part, data_test, target_test, file_name="plot_result.html"):
 
     """
     CNN-ELMモデルの評価
@@ -115,12 +117,14 @@ def cnn_elm_evaluation(cnn_part, elm_part, test_data, test_label, file_name="plo
     :return: Result Score
     """
 
-    cnn_result = cnn_part.predict(test_data)
+    target_test_oh = np_utils.to_categorical(target_test, NUM_CLASS)
+
+    cnn_result = cnn_part.predict(data_test)
     elm_result = elm_part.predict(cnn_result)
 
     elm_result_class = np.array([np.argmax(r) for r in elm_result])
 
-    confusion = elm_model.confusion(test_label, elm_result_class)
+    confusion = elm_model.confusion(target_test_oh, elm_result_class)
 
     # Convert one-hot to class
     trace = plotly.graph_objs.Heatmap(z=confusion, colorscale=[[0, '#E6E6E6'], [1, '#04B486']])
@@ -133,19 +137,19 @@ def cnn_elm_evaluation(cnn_part, elm_part, test_data, test_label, file_name="plo
         trace.layout.annotations[i].font.size = 20
     plotly.offline.plot(trace, filename=file_name)
 
-    precision, recall, fscore, support = precision_recall_fscore_support(test_label, elm_result_class)
+    precision, recall, fscore, support = precision_recall_fscore_support(target_test, elm_result_class)
 
     return precision, recall, fscore, support
 
 
 if __name__ == '__main__':
 
-    data_train_2d, data_test_2d, target_train_oh, target_test_oh = load_mnist()
+    data_train_2d, data_test_2d, target_train, target_test = load_mnist_2d()
 
-    cnn_model = cnn_generate(data_train_2d, target_train_oh)
+    cnn_model = cnn_generate(data_train_2d, target_train)
 
     hidden_layer_model, cnn_train_result = hidden_layer_generate(cnn_model)
 
     elm_model = elm_model_generate(cnn_train_result)
 
-    precision, recall, fscore, support = cnn_elm_evaluation(hidden_layer_model, elm_model, target_test_oh, data_test_2d)
+    precision, recall, fscore, support = cnn_elm_evaluation(hidden_layer_model, elm_model, data_test_2d, target_test)
